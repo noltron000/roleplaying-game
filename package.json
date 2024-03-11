@@ -1,0 +1,34 @@
+{
+  "name": "ts-node-template",
+	"private": false,
+	"license": "NONE",
+	"version": "0.0.1",
+  "description": "A template for making typescript + node + esm systems.",
+	"keywords": [ ],
+	"homepage": "https://github.com/noltron000/__URL__#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/noltron000/__URL__.git"
+	},
+	"bugs": {
+		"email": "noltron000@gmail.com",
+		"url": "https://github.com/noltron000/__URL__/issues"
+	},
+	"author": {
+		"name": "Nolan Kovacik",
+		"email": "noltron000@gmail.com",
+		"url": "https://nebuloid.dev/"
+	},
+	"contributors": [
+		{
+			"name": "Frances Coronel",
+			"email": "fvcproductions@gmail.com",
+			"url": "https://francescoronel.com/"
+		}
+	],
+	"main": "source/main.mts",
+	"type": "module",
+	"scripts": { },
+	"dependencies": { },
+	"devDependencies": { }
+}
