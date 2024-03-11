@@ -28,7 +28,9 @@
 	],
 	"main": "source/main.mts",
 	"type": "module",
-	"scripts": { },
+	"scripts": {
+		"ts-node": "node --loader ./source/configuration/esm-loader.mjs"
+	},
 	"dependencies": {
 		"tsconfig-paths": "^4.2.0"
 	},
