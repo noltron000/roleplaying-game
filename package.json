@@ -1,18 +1,20 @@
 {
-	"name": "ts-node-template",
-	"private": false,
+	"name": "roleplayer",
+	"private": true,
 	"license": "NONE",
 	"version": "0.0.1",
-	"description": "A template for making typescript + node + esm systems.",
-	"keywords": [ ],
-	"homepage": "https://github.com/noltron000/__URL__#readme",
+	"description": "An online-centered table-top roleplaying game.",
+	"keywords": [
+		"roleplaying game"
+	],
+	"homepage": "https://github.com/noltron000/roleplaying-game#readme",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/noltron000/__URL__.git"
+		"url": "git+https://github.com/noltron000/roleplaying-game.git"
 	},
 	"bugs": {
 		"email": "noltron000@gmail.com",
-		"url": "https://github.com/noltron000/__URL__/issues"
+		"url": "https://github.com/noltron000/roleplaying-game/issues"
 	},
 	"author": {
 		"name": "Nolan Kovacik",
@@ -29,6 +31,7 @@
 	"main": "source/main.mts",
 	"type": "module",
 	"scripts": {
+		"start": "yarn ts-node ./source/main.mts",
 		"ts-node": "node --loader ./source/configuration/esm-loader.mjs"
 	},
 	"dependencies": {
