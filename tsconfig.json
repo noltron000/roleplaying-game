@@ -7,6 +7,7 @@
 		/* Type Checking */
 		"strict": true,                                         // Enable all strict type-checking options.
 		"types": ["node"],                                      // Use node types.
+		"allowUnreachableCode": true,                           // Allow unreachable code.
 
 		/* Emit */
 		"noEmit": true,                                         // Disable emitting files from a compilation.
@@ -25,6 +26,26 @@
 		"resolveJsonModule": true,                              // Enable importing .json files.
 		"allowImportingTsExtensions": true,                     // Enable importing files with a specified TypeScript extension.
 		"paths": {
+			"#classes/*": [
+				"./classes/*",
+				"./classes/*.mts",
+				"./classes/*/index.mts",
+			],
+			"#data/*": [
+				"./data/*",
+				"./data/*.mts",
+				"./data/*/index.mts",
+			],
+			"#tools/*": [
+				"./tools/*",
+				"./tools/*.mts",
+				"./tools/*/index.mts",
+			],
+			"#types/*": [
+				"./types/*",
+				"./types/*.mts",
+				"./types/*/index.mts",
+			],
 			"#source/*": [
 				"./*",
 				"./*.mts",
