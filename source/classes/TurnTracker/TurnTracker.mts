@@ -1,9 +1,11 @@
 import JSON5 from 'json5'
 
 import {SortedList} from '#classes/Lists'
+import {TurnTrackerEvents} from '#classes/TurnTracker'
 import {makeTable} from '#tools/tables'
 
 import type {SortedListArgs} from '#classes/Lists'
+import type {EventListeners} from '#classes/TurnTracker'
 import type {integer, checkMethod} from '#types/aliases'
 
 /** A Turn containing index metadata. Can be nullish. */
@@ -20,6 +22,7 @@ type TurnRelation = (
 interface TurnTrackerArgs<Turn>
 extends SortedListArgs<Turn> {
 	filterMethod?: checkMethod<Turn>,
+	events?: EventListeners<Turn>,
 }
 
 const invalidTurnError = new Error(
@@ -32,6 +35,7 @@ The __TurnTracker__ class is an abstraction of a
 	round-robin-style turn tracker.
 **/
 class TurnTracker<Turn = unknown> {
+	#events: TurnTrackerEvents<Turn>
 	#listRef: SortedList<Turn>
 	#filterMethod: checkMethod<Turn>
 	#current: MetaTurn<Turn> = null
@@ -78,9 +82,11 @@ class TurnTracker<Turn = unknown> {
 	**/
 	constructor ({
 		filterMethod = ( ) => true,
+		events = { },
 		items = [ ],
 		...args
 	}: TurnTrackerArgs<Turn>) {
+		this.#events = new TurnTrackerEvents(this, events)
 		this.#listRef = new SortedList(args)
 		this.#filterMethod = filterMethod
 		this.add(...items)
@@ -91,7 +97,8 @@ class TurnTracker<Turn = unknown> {
 	/* *********************** */
 
 	/**
-	Automatically handles turn transitions.
+	Manages event listeners for the turn-based system.
+	Automatically triggers events based on turn transitions.
 
 	The logic may appear somewhat intimidating to understand,
 		so try to understand each conditional block on its own.
@@ -121,12 +128,23 @@ class TurnTracker<Turn = unknown> {
 
 	@param options.skip
 	_Optional._
-	If a turn is skipped, the counter doesn't increment.
+	If the current turn is marked as skipped, the end-of-turn
+		logic does not get executed.
+	Instead, a special skipped case is ran with the turn.
+
+	---
+
+	@param options.remove
+	_Optional._
+	If the current turn is marked as removed, the
+		on-turn-removal logic will get executed.
+	This won't remove the turn on its own;
+		it just signals that a turn has been removed.
 	**/
 	#safelyCycleTurn (
 		original: MetaTurn<Turn>,
 		upcoming: MetaTurn<Turn>,
-		{skip = false} = { }, // Options
+		{skip = false, remove = false} = { }, // Options
 	) {
 		// The tracker is inactive and remains inactive.
 		if (original == null && upcoming == null) {
@@ -137,22 +155,40 @@ class TurnTracker<Turn = unknown> {
 			// TypeScript thinks `upcoming` can be nullish.
 			upcoming = upcoming! // It can't - tell TypeScript!
 			this.#current = upcoming
+			this.#events.onActivateTracker( )
+			this.#events.onStartRound( )
+			this.#events.onStartTurn(upcoming.turn)
 		}
 		// Deactivate the tracker (it is activated).
 		else if (upcoming == null) {
+			skip && this.#events.onSkipTurn(original.turn)
+			skip || this.#events.onEndTurn(original.turn)
+			remove && this.#events.onRemoveTurn(original.turn)
+			this.#events.onEndRound( )
 			this.#current = upcoming
 			this.#roundCounter++
+			this.#events.onDeactivateTracker( )
 		}
 		// The upcoming turn is ahead of the original turn.
 		else if (upcoming.index > original.index) {
+			skip && this.#events.onSkipTurn(original.turn)
+			skip || this.#events.onEndTurn(original.turn)
+			remove && this.#events.onRemoveTurn(original.turn)
 			this.#current = upcoming
 			skip || this.#turnCounter++
+			this.#events.onStartTurn(upcoming.turn)
 		}
 		// The upcoming turn is behind the orginal turn.
 		else {
+			skip && this.#events.onSkipTurn(original.turn)
+			skip || this.#events.onEndTurn(original.turn)
+			remove && this.#events.onRemoveTurn(original.turn)
+			this.#events.onEndRound( )
 			this.#current = upcoming
 			this.#roundCounter++
 			skip || this.#turnCounter++
+			this.#events.onStartRound( )
+			this.#events.onStartTurn(upcoming.turn)
 		}
 	}
 
@@ -182,6 +218,16 @@ class TurnTracker<Turn = unknown> {
 		// Gather the "original" and "upcoming" turn states
 		//	to determine whether the current turn shifted.
 		const original = this.#current
+
+		upcomingTurns // Check which turns were added.
+		.filter((turn) => !originalTurns.includes(turn))
+		.forEach((turn) => this.#events.onAddTurn(turn))
+
+		originalTurns // Check which turns were removed.
+		.filter((turn) => !upcomingTurns.includes(turn))
+		.filter((turn) => turn !== original?.turn)
+		.forEach((turn) => this.#events.onRemoveTurn(turn))
+
 		if (original == null) return // Tracker was disabled.
 		const upcoming = this.getEntryAt(original.index)
 
@@ -212,7 +258,7 @@ class TurnTracker<Turn = unknown> {
 			this.#safelyCycleTurn(
 				original,
 				upcoming,
-				{skip: true},
+				{skip: true, remove: true},
 			)
 		}
 	}
@@ -229,20 +275,8 @@ class TurnTracker<Turn = unknown> {
 
 	/** Sets the active status of the tracker. */
 	set active (value) {
-		const original = this.#current
-
-		// Activate the tracker.
-		if (value === true) {
-			const upcoming = this.getEntryAt('next-turn')
-			if (original !== null || upcoming === null) return
-			this.#safelyCycleTurn(null, upcoming)
-		}
-
-		// Deactivate the tracker.
-		else if (value === false) {
-			if (original === null) return
-			this.#safelyCycleTurn(original, null, {skip: true})
-		}
+		if (value) this.activate( )
+		else this.deactivate( )
 	}
 
 	/** Points to the current turn in the turn list. */
@@ -381,11 +415,43 @@ class TurnTracker<Turn = unknown> {
 	/* # INDEX CYCLER METHODS # */
 	/* ************************ */
 
+	/**
+	Activates the tracker, if there is a valid turn in it.
+	If it can't activate, then nothing happens.
+	**/
+	activate ( ) {
+		// Get the "original" and "upcoming" turns.
+		const original = this.#current
+		const upcoming = this.getEntryAt('next-turn')
+
+		// Tracker is already activated, or has no turns?
+		if (original !== null || upcoming === null) return
+
+		// Activate the tracker.
+		this.#safelyCycleTurn(null, upcoming)
+	}
+
+	/**
+	Deactivates the tracker and unsets the current turn.
+	By default, the current active turn is marked as skipped.
+	**/
+	deactivate ({skip = true} = { }) {
+		// Get the "original" and "upcoming" turns.
+		const original = this.#current
+		const upcoming = null
+
+		// Tracker is already deactivated?
+		if (original === null) return
+
+		// Deactivate the tracker.
+		this.#safelyCycleTurn(original, upcoming, {skip})
+	}
+
 	/** Increments turn & round cyclers as necessary. */
-	next ( ) {
+	next ({skip = false} = { }) {
 		const current = this.#current
 		const upcoming = this.getEntryAt('next-turn')
-		this.#safelyCycleTurn(current, upcoming)
+		this.#safelyCycleTurn(current, upcoming, {skip})
 	}
 
 	/* ***************************** */
