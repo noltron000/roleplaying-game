@@ -3,6 +3,8 @@ export {
 	AbstractBilateralTree,
 } from './AbstractTrees/index.mts'
 
+export {Tree} from './Tree.mts'
+
 export type {
 	GraphPath,
 	VisitData,
