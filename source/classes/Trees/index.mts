@@ -1,4 +1,7 @@
-export {AbstractTree} from './AbstractTrees/index.mts'
+export {
+	AbstractTree,
+	AbstractBilateralTree,
+} from './AbstractTrees/index.mts'
 
 export type {
 	GraphPath,
