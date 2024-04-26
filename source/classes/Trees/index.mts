@@ -1,3 +1,5 @@
+export {AbstractTree} from './AbstractTrees/index.mts'
+
 export type {
 	GraphPath,
 	VisitData,
