@@ -4,6 +4,7 @@ export {
 } from './AbstractTrees/index.mts'
 
 export {Tree} from './Tree.mts'
+export {RootedTree} from './RootedTree.mts'
 
 export type {
 	GraphPath,
