@@ -1,8 +1,8 @@
 {
 	"name": "roleplayer",
 	"private": true,
-	"license": "NONE",
-	"version": "0.0.1",
+	"license": "UNLICENSED",
+	"version": "0.0.2",
 	"description": "An online-centered table-top roleplaying game.",
 	"keywords": [
 		"roleplaying game"
@@ -35,6 +35,9 @@
 		"ts-node": "node --loader ./source/configuration/esm-loader.mjs"
 	},
 	"dependencies": {
+		"@noltron000/tree-structures": "^0.0.3",
+		"@noltron000/turn-tracker": "^0.0.2",
+		"json5": "^2.2.3",
 		"tsconfig-paths": "^4.2.0"
 	},
 	"devDependencies": {
